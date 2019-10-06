@@ -9,6 +9,17 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
+app.all('*', function (req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
+  if (req.method == 'OPTIONS') {
+    res.send(200);
+  } else {
+    next();
+  }
+});
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -39,13 +50,6 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.all('*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With");
-  res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");
-  res.header("X-Powered-By",' 3.2.1')
-  res.header("Content-Type", "application/json;charset=utf-8");
-  next();
-});
+
 
 module.exports = app;
