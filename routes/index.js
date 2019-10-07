@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 const md5 = require("blueimp-md5");
-const {UserModel} = require("../db/models");
+const {UserModel, ChatModel} = require("../db/models");
 const filter = {password: 0, __v: 0};//过滤指定属性（这里为密码和自带的_v）
 
 router.get('/', function(req, res, next) {
@@ -28,15 +28,12 @@ path:             /register
 */
 router.post("/register", function(req, res) {
   const {username, password} = req.body;
-  console.log("req:", req.body);
-  console.log({username, password});
   //用户是否存在？
   UserModel.findOne({username}, function(err, user) {
     if(user) {//如果user存在
       res.send({code: 1, msg: "Username Existed!"});
     }
     else {
-      console.log({username, password:md5(password)});
       new UserModel({username, password:md5(password)}).save(function(err, user) {
         // 生成cookie，交给浏览器保存，实现自动登录
         console.log("user", user._id);
@@ -53,7 +50,7 @@ router.post("/login", function(req, res) {
   const {username, password} = req.body;
   console.log({username, password:md5(password)});
 
-  UserModel.findOne({username, password:md5(password)},  function(err, user) {
+  UserModel.findOne({username, password:md5(password)}, filter, function(err, user) {
     if(user) {
       res.cookie("userid", user._id, {maxAge:1000*60*60*24});
       res.send({code: 0, data: user});
@@ -61,6 +58,54 @@ router.post("/login", function(req, res) {
     else {
       res.send({code: 1, msg: "Incorrect USERNAME or PASSWORD!"});
     }
+  })
+})
+
+//获取通讯录的路由
+router.get("/contact", function(req, res) {
+  UserModel.find({}, function(err, users) {
+    res.send({code: 0, data: users})
+  })
+})
+
+//获取消息列表
+router.get("/msglist", function(req, res) {
+  const userid = req.cookies.userid;
+  UserModel.find(function(err, userDocs) {
+    //对象容器存储
+    const users = {};
+    userDocs.forEach(item => {
+      // console.log(item);
+      users[item._id] = {username: item.username}
+    })
+    //查询userid相关的聊天信息:from是userid or to是userid
+    ChatModel.find({"$or": [{from: userid}, {to: userid}]}, filter, function(err, chatMsgs) {//返回的为聊天消息的数组
+      res.send({code: 0, data: {users, chatMsgs}})
+    })
+  })
+
+})
+//标记消息为已读
+router.post("/readmsg", function(req, res) {
+  const from = req.body.from;
+  const to = req.cookies.userid;
+  //1. 查询条件
+  //2. 更新为指定的数据对象
+  //3. 是否一次更新多条
+  ChatModel.update({from, to, read: false}, {read:true}, {multi: true}, function(err, doc) {
+    res.send({code: 0, data: doc.nModified});//更新的数量
+  })
+})
+
+
+//获取用户信息
+router.get("/user", function(req, res) {
+  const userid = req.cookies.userid;
+  if(!userid) {
+    return res.send({code:1, msg:"请先登录"});
+  }
+  UserModel.findOne({_id: userid}, filter, function(err, user) {
+    return res.send({code:0, data: user})
   })
 })
 
