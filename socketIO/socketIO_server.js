@@ -1,4 +1,4 @@
-const {ChatModel} = require("../db/models");
+const {ChatModel, CircleModel} = require("../db/models");
 module.exports = function(server) {
     const io = require("socket.io")(server);
     //监视客户端与服务器的链接
@@ -15,6 +15,14 @@ module.exports = function(server) {
             new ChatModel({from, to, content, chat_id, create_time}).save(function(err, chatMsg) {
                 //向所有连接上的的客户端发（不太好）
                 io.emit("receiveMsg", chatMsg)
+            });
+        })
+        socket.on("sendCircle", function({user, content}) {
+            console.log("我收到了circle！");
+            console.log({user, content});
+            new CircleModel({user, content}).save(function(err, circleMsg) {
+                //向所有连接的的客户端发送这个CircleModel
+                io.emit("receiveCircle", circleMsg);
             });
         })
     })

@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 const md5 = require("blueimp-md5");
-const {UserModel, ChatModel} = require("../db/models");
+const {UserModel, ChatModel, CircleModel} = require("../db/models");
 const filter = {password: 0, __v: 0};//过滤指定属性（这里为密码和自带的_v）
 
 router.get('/', function(req, res, next) {
@@ -109,4 +109,19 @@ router.get("/user", function(req, res) {
   })
 })
 
+//获取朋友圈
+router.get("/circle", function(req, res) {
+  UserModel.find(function(err, userDocs) {
+    //对象容器存储
+    const users = {};
+    userDocs.forEach(item => {
+      // console.log(item);
+      users[item._id] = {username: item.username}
+    })
+    //查询userid相关的聊天信息:from是userid or to是userid
+    CircleModel.find(function(err, circleMsgs) {//返回的为聊天消息的数组
+      res.send({code: 0, data: {users, circleMsgs}})
+    })
+  })
+})
 module.exports = router;

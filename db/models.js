@@ -24,3 +24,10 @@ const chatSchema = mongoose.Schema({
 })
 const ChatModel = mongoose.model("chat", chatSchema);
 exports.ChatModel = ChatModel;
+
+const CircleSchema = mongoose.Schema({
+    user:       {type: String, required: true},
+    content:    {type: String, required: true}
+})
+const CircleModel = mongoose.model("circle", CircleSchema);
+exports.CircleModel = CircleModel;
